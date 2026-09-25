@@ -7,7 +7,7 @@ REPO_OWNER = "fastapi"
 REPO_NAME = "fastapi"
 BRANCH = "master"
 REMOTE_DIR = "docs/en/docs"
-LOCAL_DIR = "backend/data/devdocs"
+LOCAL_DIR = "data/devdocs"
 
 def get_github_tree(session):
     """Fetches the recursive tree of the repository."""
@@ -64,10 +64,12 @@ def main():
     with requests.Session() as session:
         tree = get_github_tree(session)
 
-        # Filter for files (blobs) within the target directory
+        # Filter for files (blobs) within the target directory, excluding images
         files_to_download = [
             item["path"] for item in tree
-            if item["type"] == "blob" and item["path"].startswith(REMOTE_DIR)
+            if item["type"] == "blob"
+            and item["path"].startswith(REMOTE_DIR)
+            and "/img/" not in item["path"]
         ]
 
         total = len(files_to_download)
