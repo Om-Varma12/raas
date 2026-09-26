@@ -7,46 +7,47 @@ class ConversationChunker(BaseChunker):
     Strategy: Atomic issues for short threads, per-comment for long ones.
     """
 
-    def __init__(self, max_comments_per_chunk: int = 5):
-        self.max_comments_per_chunk = max_comments_per_chunk
+    def __init__(self, max_tokens: int = 500):
+        self.max_tokens = max_tokens
 
     def chunk(self, element: Dict[str, Any]) -> List[Dict[str, Any]]:
         content = element["content"]
         metadata = element["metadata"]
 
-        # Simple logic: if content is short enough, keep it atomic
-        if len(content.split()) < 500:
+        # As per TECHNICALS.md: GitHub issues use a separate strategy
+        # If the whole issue is short, keep it atomic.
+        if len(content.split()) * 1.3 < self.max_tokens:
             return [{
                 "content": content,
                 "metadata": {**metadata, "chunk_id": "atomic_conversation"},
                 "type": "conversation"
             }]
 
-        # Otherwise, split by "Comment:" markers (introduced by our GitHubParser)
-        comments = content.split("Comment:")
-        # The first element is usually the Title/Body
+        # Otherwise, split by the "Comment:" markers produced by the parser.
+        # We want to keep the Title/Body in the first chunk.
+        parts = content.split("Comment:")
+
         chunks = []
+        current_chunk = parts[0].strip()
 
-        current_chunk = comments[0]
-        comment_count = 0
-
-        for comment in comments[1:]:
-            if comment_count >= self.max_comments_per_chunk:
+        for i in range(1, len(parts)):
+            comment = "Comment:" + parts[i]
+            # Check if adding this comment exceeds the token limit
+            if (len(current_chunk.split()) * 1.3) + (len(comment.split()) * 1.3) > self.max_tokens:
                 chunks.append({
                     "content": current_chunk,
                     "metadata": {**metadata, "chunk_index": len(chunks)},
                     "type": "conversation"
                 })
-                current_chunk = "Comment:" + comment
-                comment_count = 1
+                current_chunk = comment
             else:
-                current_chunk += "Comment:" + comment
-                comment_count += 1
+                current_chunk += "\n" + comment
 
-        chunks.append({
-            "content": current_chunk,
-            "metadata": {**metadata, "chunk_index": len(chunks)},
-            "type": "conversation"
-        })
+        if current_chunk:
+            chunks.append({
+                "content": current_chunk,
+                "metadata": {**metadata, "chunk_index": len(chunks)},
+                "type": "conversation"
+            })
 
         return chunks
