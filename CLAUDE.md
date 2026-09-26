@@ -33,3 +33,7 @@ The system is split into three main components:
 - **Tenant Isolation**: Every retrieval query MUST be filtered by `tenant_id` before ranking.
 - **Embedding Task Types**: Must explicitly distinguish between `retrieval.passage` (for ingestion) and `retrieval.query` (for user questions) to avoid recall degradation.
 - **Prompt Ordering**: Static content first, dynamic content last to optimize prompt caching.
+- **Chunking Strategy**: Must be structural, not just size-based. 
+    - Finance: Split by SEC Item sections; tables are atomic retrieval units.
+    - DevDocs: Split by Markdown headers; fenced code blocks are atomic.
+    - GitHub Issues: Split by comment threads for conversational context.
