@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import List, Dict, Optional
 import hashlib
 
 class EmbeddingCache:
