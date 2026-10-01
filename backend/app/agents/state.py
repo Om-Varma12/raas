@@ -11,4 +11,5 @@ class AgentState(TypedDict):
     retrieved_context: List[dict]
     draft_answer: Optional[str]
     is_grounded: Optional[bool]
+    routing_decision: Optional[str]
     iteration_count: int

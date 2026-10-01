@@ -1,8 +1,13 @@
 import logging
 from typing import List, Dict, Any, Optional
-from backend.app.ingestion.embedder import JinaEmbedder
-from backend.app.retrieval.vector_store import RetrievalVectorStore
-from backend.app.retrieval.reranker import CrossEncoderReranker
+try:
+    from app.ingestion.embedder import JinaEmbedder
+    from app.retrieval.vector_store import RetrievalVectorStore
+    from app.retrieval.reranker import CrossEncoderReranker
+except ImportError:
+    from backend.app.ingestion.embedder import JinaEmbedder
+    from backend.app.retrieval.vector_store import RetrievalVectorStore
+    from backend.app.retrieval.reranker import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
 

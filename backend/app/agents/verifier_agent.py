@@ -1,6 +1,9 @@
 import logging
 from typing import List, Dict, Any, Optional
-from backend.app.agents.state import AgentState
+try:
+    from app.agents.state import AgentState
+except ImportError:
+    from backend.app.agents.state import AgentState
 
 logger = logging.getLogger(__name__)
 

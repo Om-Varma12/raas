@@ -1,7 +1,11 @@
 import logging
 from typing import List, Dict, Any, Optional
-from backend.app.agents.state import AgentState
-from backend.app.retrieval.engine import RetrievalEngine
+try:
+    from app.agents.state import AgentState
+    from app.retrieval.engine import RetrievalEngine
+except ImportError:
+    from backend.app.agents.state import AgentState
+    from backend.app.retrieval.engine import RetrievalEngine
 
 logger = logging.getLogger(__name__)
 

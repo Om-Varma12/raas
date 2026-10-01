@@ -1,6 +1,9 @@
 import logging
 from typing import List, Dict, Any, Optional
-from sentence_transformers import CrossEncoder
+try:
+    from sentence_transformers import CrossEncoder
+except ImportError:
+    CrossEncoder = None
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +14,12 @@ class CrossEncoderReranker:
 
     def __init__(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
         try:
-            self.model = CrossEncoder(model_name)
-            logger.info(f"CrossEncoder initialized with model: {model_name}")
+            if CrossEncoder is not None:
+                self.model = CrossEncoder(model_name)
+                logger.info(f"CrossEncoder initialized with model: {model_name}")
+            else:
+                logger.warning("sentence_transformers not installed. Reranker fallback active.")
+                self.model = None
         except Exception as e:
             logger.error(f"Failed to initialize CrossEncoder: {e}")
             self.model = None
