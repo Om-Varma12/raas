@@ -16,7 +16,7 @@ collection_name: tenant_{tenant_id}
 
 | Vector name | Type | Dims | Distance | Notes |
 |---|---|---|---|---|
-| `dense` | float32 | 1024 (Jina, confirm truncation setting) | Cosine | Normalize on write |
+| `dense` | float32 | 1024 (Jina Matryoshka truncation) | Cosine | Normalize on write |
 | `sparse` | sparse (BM25-style) | — | Dot | Qdrant native sparse vector, for hybrid fusion query |
 
 ### HNSW config (per collection, tunable per tenant SLA)
@@ -101,6 +101,6 @@ tenants
 
 ## Open items — decide before ingestion code is written
 
-- [ ] Confirm Jina embedding dimension (1024 default vs. Matryoshka truncation to 512/768)
+- [x] Confirmed Jina embedding dimension (1024 dimensions via Matryoshka truncation)
 - [ ] Confirm sparse vector generation method (Qdrant built-in vs. precomputed BM25 upload)
 - [ ] Decide whether `table_metadata` is stored as raw JSON or a normalized sub-schema

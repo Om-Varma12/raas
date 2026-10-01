@@ -5,3 +5,5 @@ python-dotenv
 qdrant-client[fastembed]
 requests
 aiohttp
+beautifulsoup4
+lxml

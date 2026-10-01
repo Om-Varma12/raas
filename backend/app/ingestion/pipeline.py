@@ -79,7 +79,11 @@ class IngestionPipeline:
             chunk["vector"] = vectors[i]
 
         # 5. Store: Chunks -> Vector Store
-        self.storage.store_chunks(self.tenant_id, all_chunks)
+        self.storage.store_chunks(
+            collection_name=self.tenant_id,
+            chunks=all_chunks,
+            tenant_id=self.tenant_id
+        )
         logger.info(f"Successfully stored {len(all_chunks)} chunks for tenant {self.tenant_id}.")
 
         return len(all_chunks)

@@ -15,44 +15,72 @@ class VectorStoreWrapper:
     def __init__(self, host: str = "localhost", port: int = 6333, api_key: Optional[str] = None):
         self.client = QdrantClient(host=host, port=port, api_key=api_key)
 
-    def _ensure_collection(self, tenant_id: str):
+    def _ensure_collection(self, collection_name: str, vector_size: int = 1024):
         """
-        Creates a Qdrant collection for the tenant if it doesn't exist.
-        Configured as per docs/SCHEMA.md.
+        Creates a Qdrant collection if it doesn't exist or recreates if size mismatches.
         """
-        collection_name = f"tenant_{tenant_id}"
-
         try:
-            self.client.get_collection(collection_name=collection_name)
+            info = self.client.get_collection(collection_name=collection_name)
+            dense_cfg = info.config.params.vectors.get("dense") if isinstance(info.config.params.vectors, dict) else info.config.params.vectors
+            existing_size = getattr(dense_cfg, "size", None)
+            if existing_size and existing_size != vector_size:
+                logger.info(f"Recreating collection {collection_name} due to dimension mismatch ({existing_size} vs {vector_size})")
+                self.client.delete_collection(collection_name=collection_name)
+                import time
+                time.sleep(0.5)
+                raise ValueError("Dimension mismatch")
         except Exception:
-            logger.info(f"Creating new collection for tenant: {collection_name}")
-            self.client.create_collection(
-                collection_name=collection_name,
-                vectors_config={
-                    "dense": models.VectorParams(
-                        size=1024, # Jina truncated dimension from TECHNICALS.md
-                        distance=models.Distance.COSINE
-                    ),
-                    "sparse": models.SparseVectorParams() # For hybrid search
-                }
-            )
+            logger.info(f"Creating new collection: {collection_name}")
+            try:
+                self.client.create_collection(
+                    collection_name=collection_name,
+                    vectors_config={
+                        "dense": models.VectorParams(
+                            size=vector_size,
+                            distance=models.Distance.COSINE
+                        )
+                    }
+                )
+            except Exception as err:
+                err_msg = str(err)
+                if hasattr(err, "response") and getattr(err.response, "content", None):
+                    err_msg += " " + str(err.response.content)
+                if "File exists" in err_msg or "os error 17" in err_msg:
+                    logger.warning(f"Orphaned collection folder detected for {collection_name}. Deleting and recreating...")
+                    try:
+                        self.client.delete_collection(collection_name=collection_name)
+                        import time
+                        time.sleep(0.5)
+                    except Exception:
+                        pass
+                    self.client.create_collection(
+                        collection_name=collection_name,
+                        vectors_config={
+                            "dense": models.VectorParams(
+                                size=vector_size,
+                                distance=models.Distance.COSINE
+                            )
+                        }
+                    )
+                else:
+                    raise err
 
-    def store_chunks(self, tenant_id: str, chunks: List[Dict[str, Any]]):
+    def store_chunks(self, collection_name: str, chunks: List[Dict[str, Any]], tenant_id: Optional[str] = None):
         """
-        Stores chunks for a specific tenant in their dedicated collection.
+        Stores chunks in the specified collection.
         """
-        if not tenant_id:
-            raise ValueError("tenant_id is required for all vector store operations.")
+        if not collection_name:
+            raise ValueError("collection_name is required.")
+        
+        tenant_id = tenant_id or collection_name
 
-        self._ensure_collection(tenant_id)
-        collection_name = f"tenant_{tenant_id}"
+        self._ensure_collection(collection_name)
 
         points = []
         for chunk in chunks:
-            # Enforce tenant_id inside the payload as per SCHEMA.md
             payload = chunk.get("metadata", {}).copy()
             payload["tenant_id"] = tenant_id
-            payload["content"] = chunk.get("content") # Store content for retrieval
+            payload["content"] = chunk.get("content")
 
             point_id = str(uuid.uuid4())
 
@@ -61,7 +89,6 @@ class VectorStoreWrapper:
                     id=point_id,
                     vector={
                         "dense": chunk.get("vector"),
-                        # Sparse vectors would be added here in the HybridSearch phase
                     },
                     payload=payload
                 )
@@ -72,12 +99,10 @@ class VectorStoreWrapper:
             points=points
         )
 
-    def get_tenant_chunks(self, tenant_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_tenant_chunks(self, collection_name: str, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        Retrieves chunks for a specific tenant.
-        Used primarily for leak-test assertions.
+        Retrieves chunks from a specific collection.
         """
-        collection_name = f"tenant_{tenant_id}"
         try:
             result = self.client.scroll(
                 collection_name=collection_name,

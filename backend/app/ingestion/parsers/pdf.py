@@ -1,6 +1,8 @@
 import os
 from typing import List, Dict, Any
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+import warnings
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 from .base import BaseParser
 
 class SECParser(BaseParser):

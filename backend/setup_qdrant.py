@@ -31,7 +31,7 @@ def main():
             collection_name=collection_name,
             vectors_config={
                 "dense": models.VectorParams(
-                    size=2048, 
+                    size=1024, 
                     distance=models.Distance.COSINE
                 ),
             },
