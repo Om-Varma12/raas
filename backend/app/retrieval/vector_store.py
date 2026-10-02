@@ -24,13 +24,13 @@ class RetrievalVectorStore:
         collection_name = self._get_collection_name(tenant_id)
         try:
             # Use the 'dense' named vector as defined during ingestion
-            result = self.client.search(
+            result = self.client.query_points(
                 collection_name=collection_name,
-                query_vector=("dense", query_vector),
+                query=models.NamedVector(name="dense", vector=query_vector),
                 limit=limit,
                 with_payload=True
             )
-            return [hit.payload for hit in result]
+            return [hit.payload for hit in result.points]
         except Exception as e:
             logger.error(f"Dense search failed for tenant {tenant_id}: {e}")
             return []
@@ -41,15 +41,15 @@ class RetrievalVectorStore:
         """
         collection_name = self._get_collection_name(tenant_id)
         try:
-            result = self.client.search(
+            result = self.client.query_points(
                 collection_name=collection_name,
-                query_filter=models.Filter(
+                query=models.Filter(
                     must=[models.FieldCondition(key="tenant_id", match=models.MatchValue(value=tenant_id))]
                 ),
                 limit=limit,
                 with_payload=True
             )
-            return [hit.payload for hit in result]
+            return [hit.payload for hit in result.points]
         except Exception as e:
             logger.error(f"Sparse search failed for tenant {tenant_id}: {e}")
             return []
