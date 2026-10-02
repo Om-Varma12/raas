@@ -67,11 +67,11 @@ class VectorStoreWrapper:
 
     def store_chunks(self, collection_name: str, chunks: List[Dict[str, Any]], tenant_id: Optional[str] = None):
         """
-        Stores chunks in the specified collection.
+        Stores chunks in the specified collection using deterministic IDs for evaluation consistency.
         """
         if not collection_name:
             raise ValueError("collection_name is required.")
-        
+
         tenant_id = tenant_id or collection_name
 
         self._ensure_collection(collection_name)
@@ -82,7 +82,14 @@ class VectorStoreWrapper:
             payload["tenant_id"] = tenant_id
             payload["content"] = chunk.get("content")
 
-            point_id = str(uuid.uuid4())
+            # Deterministic ID generation: uuid5(NAMESPACE_DNS, string)
+            # Formula: f"{tenant_id}|{doc_path}|{content_hash}"
+            # doc_path might be in metadata; fallback to content_hash
+            doc_path = payload.get("doc_path", "unknown_path")
+            content_hash = payload.get("content_hash", "")
+
+            unique_string = f"{tenant_id}|{doc_path}|{content_hash}"
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_string))
 
             points.append(
                 models.PointStruct(
