@@ -1,0 +1,3 @@
+{"query": "What was the Q3 revenue for Company X?", "tenant_id": "tenant-fin-default", "relevant_chunk_ids": ["fin_rev_q3_1"], "type": "table", "hops": 1}
+{"query": "List the risk factors for 2024", "tenant_id": "tenant-fin-default", "relevant_chunk_ids": ["fin_risk_2024_1"], "type": "prose", "hops": 1}
+{"query": "Compare Item 7 revenue across 2023 and 2024", "tenant_id": "tenant-fin-default", "relevant_chunk_ids": ["fin_rev_comp_1", "fin_rev_comp_2"], "type": "table", "hops": 2}
